@@ -788,6 +788,21 @@ public class Intent implements Parcelable, Cloneable {
     @Deprecated
     public static final String EXTRA_SHORTCUT_ICON_RESOURCE =
             "android.intent.extra.shortcut.ICON_RESOURCE";
+    /**
+     * PhoneWindowManager: Take Screenshot via takeScreenshot()
+     * <p>Input: nothing
+     * <p>Output: nothing
+     * @hide
+     */
+    public static final String ACTION_SCREENSHOT = "android.intent.action.SCREENSHOT";
+
+    /**
+     * PhoneWindowManager: Take Partial Screenshot via takeScreenshot()
+     * <p>Input: nothing
+     * <p>Output: nothing
+     * @hide
+     */
+    public static final String ACTION_PARTIAL_SCREENSHOT = "android.intent.action.PARTIAL_SCREENSHOT";
 
     /**
      * An activity that provides a user interface for adjusting application preferences.
