@@ -22,4 +22,10 @@
         <item>restart_recovery</item>
         <item>restart_bootloader</item>
     </string-array>
+
+    <!-- Default value for proximity check on screen wake
+         NOTE ! - Enable for devices that have a fast response proximity sensor (ideally < 300ms)
+    -->
+    <bool name="config_proximityCheckOnWake">false</bool>
+    <integer name="config_proximityCheckTimeout">250</integer>
 </resources>

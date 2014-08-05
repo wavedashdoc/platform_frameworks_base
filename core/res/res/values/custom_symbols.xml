@@ -18,4 +18,10 @@
 <resources>
     <!-- Power menu -->
     <java-symbol type="array" name="config_restartActionsList" />
+
+    <!-- Proximity check on screen on -->
+    <java-symbol type="bool" name="config_proximityCheckOnWake" />
+
+    <!-- Proximity check timeout -->
+    <java-symbol type="integer" name="config_proximityCheckTimeout" />
 </resources>
