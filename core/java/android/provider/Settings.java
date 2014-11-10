@@ -3249,6 +3249,15 @@ public final class Settings {
         public static final Validator STATUS_BAR_SHOW_BATTERY_PERCENT_VALIDATOR =
                 new InclusiveIntegerRangeValidator(0, 2);
 
+        /** Whether to allow one finger quick settings expansion on the right side of the statusbar.
+         *
+         * @hide
+         */
+        public static final String STATUS_BAR_QUICK_QS_PULLDOWN = "status_bar_quick_qs_pulldown";
+
+        /** @hide */
+        public static final Validator STATUS_BAR_QUICK_QS_PULLDOWN_VALIDATOR = sBooleanValidator;
+
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
@@ -3357,6 +3366,7 @@ public final class Settings {
             PUBLIC_SETTINGS.add(SHOW_WEB_SUGGESTIONS);
             PUBLIC_SETTINGS.add(STATUS_BAR_BATTERY_STYLE);
             PUBLIC_SETTINGS.add(STATUS_BAR_SHOW_BATTERY_PERCENT);
+            PUBLIC_SETTINGS.add(STATUS_BAR_QUICK_QS_PULLDOWN);
         }
 
         /**
@@ -3485,6 +3495,7 @@ public final class Settings {
             VALIDATORS.put(STATUS_BAR_BATTERY_STYLE, STATUS_BAR_BATTERY_STYLE_VALIDATOR);
             VALIDATORS.put(STATUS_BAR_SHOW_BATTERY_PERCENT,
                     STATUS_BAR_SHOW_BATTERY_PERCENT_VALIDATOR);
+            VALIDATORS.put(STATUS_BAR_QUICK_QS_PULLDOWN, STATUS_BAR_QUICK_QS_PULLDOWN_VALIDATOR);
         }
 
         /**
