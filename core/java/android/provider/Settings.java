@@ -3220,6 +3220,36 @@ public final class Settings {
          */
 
         /**
+         * Display style of the status bar battery information
+         * 0: Display the battery an icon in portrait mode
+         * 2: Display the battery as a circle
+         * 4: Hide the battery status information
+         * 5: Display the battery an icon in landscape mode
+         * 6: Display the battery as plain text
+         * default: 0
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
+
+        /** @hide */
+        public static final Validator STATUS_BAR_BATTERY_STYLE_VALIDATOR =
+                new DiscreteValueValidator(new String[] {"0", "2", "4", "5", "6"});
+
+        /**
+         * Status bar battery %
+         * 0: Hide the battery percentage
+         * 1: Display the battery percentage inside the icon
+         * 2: Display the battery percentage next to the icon
+         * @hide
+         */
+        public static final String STATUS_BAR_SHOW_BATTERY_PERCENT =
+                "status_bar_show_battery_percent";
+
+        /** @hide */
+        public static final Validator STATUS_BAR_SHOW_BATTERY_PERCENT_VALIDATOR =
+                new InclusiveIntegerRangeValidator(0, 2);
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -3270,7 +3300,9 @@ public final class Settings {
             VIBRATE_WHEN_RINGING,
             RINGTONE,
             LOCK_TO_APP_ENABLED,
-            NOTIFICATION_SOUND
+            NOTIFICATION_SOUND,
+            STATUS_BAR_BATTERY_STYLE,
+            STATUS_BAR_SHOW_BATTERY_PERCENT
         };
 
         /**
@@ -3323,6 +3355,8 @@ public final class Settings {
             PUBLIC_SETTINGS.add(SOUND_EFFECTS_ENABLED);
             PUBLIC_SETTINGS.add(HAPTIC_FEEDBACK_ENABLED);
             PUBLIC_SETTINGS.add(SHOW_WEB_SUGGESTIONS);
+            PUBLIC_SETTINGS.add(STATUS_BAR_BATTERY_STYLE);
+            PUBLIC_SETTINGS.add(STATUS_BAR_SHOW_BATTERY_PERCENT);
         }
 
         /**
@@ -3448,6 +3482,9 @@ public final class Settings {
             VALIDATORS.put(WIFI_STATIC_NETMASK, WIFI_STATIC_NETMASK_VALIDATOR);
             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
+            VALIDATORS.put(STATUS_BAR_BATTERY_STYLE, STATUS_BAR_BATTERY_STYLE_VALIDATOR);
+            VALIDATORS.put(STATUS_BAR_SHOW_BATTERY_PERCENT,
+                    STATUS_BAR_SHOW_BATTERY_PERCENT_VALIDATOR);
         }
 
         /**
