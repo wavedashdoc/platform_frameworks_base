@@ -248,6 +248,17 @@
                     android:value="com.android.settings.category.system" />
         </activity>
 
+        <activity android:name=".tuner.PowerNotificationControlsActivity"
+                  android:theme="@android:style/Theme.Material.Settings"
+                  android:label="@string/tuner_full_importance_settings"
+                  android:process=":tuner"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.settings.action.POWER_NOTIFICATION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity-alias android:name=".DemoMode"
                   android:targetActivity=".tuner.TunerActivity"
                   android:icon="@drawable/tuner"
