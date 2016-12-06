@@ -121,7 +121,7 @@
       <li><a href="<?cs var:toroot ?>guide/topics/resources/overview.html">
           <span class="en">Overview</span>
         </a></li>
-        <li><a href="<?cs var:toroot ?>guide/topics/resources/providing-resources.html">
+      <li><a href="<?cs var:toroot ?>guide/topics/resources/providing-resources.html">
           <span class="en">Providing Resources</span>
         </a></li>
       <li><a href="<?cs var:toroot ?>guide/topics/resources/accessing-resources.html">
@@ -129,9 +129,12 @@
         </a></li>
       <li><a href="<?cs var:toroot ?>guide/topics/resources/runtime-changes.html">
             <span class="en">Handling Runtime Changes</span>
-          </a></li>
+        </a></li>
       <li><a href="<?cs var:toroot ?>guide/topics/resources/localization.html">
           <span class="en">Localization</span>
+        </a></li>
+      <li><a href="<?cs var:toroot ?>guide/topics/resources/complex-xml-resources.html">
+          <span class="en">Complex XML Resources</span>
         </a></li>
       <li class="nav-section">
         <div class="nav-section-header"><a href="<?cs var:toroot ?>guide/topics/resources/available-resources.html">
@@ -542,9 +545,16 @@
          <li><a href="<?cs var:toroot ?>guide/topics/data/data-storage.html">
             <span class="en">Storage Options</span>
            </a></li>
-        <li><a href="<?cs var:toroot ?>guide/topics/data/backup.html">
+        <li class="nav-section">
+          <div class="nav-section-header"><a href="<?cs var:toroot ?>guide/topics/data/backup.html">
             <span class="en">Data Backup</span>
-          </a></li>
+          </a></div>
+          <ul>
+            <li><a href="<?cs var:toroot ?>guide/topics/data/autobackup.html">Auto Backup</a></li>
+            <li><a href="<?cs var:toroot ?>guide/topics/data/keyvaluebackup.html">Key/Value Backup</a></li>
+            <li><a href="<?cs var:toroot ?>guide/topics/data/testingbackup.html">Testing Backup and Restore</a></li>
+          </ul>
+        </li>
         <li><a href="<?cs var:toroot ?>guide/topics/data/install-location.html">
             <span class="en">App Install Location</span>
           </a></li>
@@ -629,6 +639,16 @@
     </ul>
   </li>
 
+  <li class="nav-section">
+    <div class="nav-section-header"><a href="<?cs var:toroot ?>guide/topics/security/index.html">
+        <span class="en">Security</span>
+    </a></div>
+    <ul>
+        <li><a href="<?cs var:toroot ?>guide/topics/security/security-config.html">
+        <span class="en">Network Security Config</span>
+        </a></li>
+    </ul>
+  </li>
 
 </ul>
 

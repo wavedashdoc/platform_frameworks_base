@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 /*
- * Copyright (c) 2014 Google Inc.
+ * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.MANAGE_NETWORK_POLICY" />
     <!-- System tool permissions granted to the shell. -->
     <uses-permission android:name="android.permission.REAL_GET_TASKS" />
     <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
@@ -65,6 +67,7 @@
     <uses-permission android:name="android.permission.READ_INPUT_STATE" />
     <uses-permission android:name="android.permission.SET_ORIENTATION" />
     <uses-permission android:name="android.permission.INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.MOVE_PACKAGE" />
     <uses-permission android:name="android.permission.CLEAR_APP_USER_DATA" />
     <uses-permission android:name="android.permission.DELETE_CACHE_FILES" />
     <uses-permission android:name="android.permission.DELETE_PACKAGES" />
@@ -87,7 +90,7 @@
     <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
-    <uses-permission android:name="android.permission.MANAGE_USERS" />
+    <uses-permission android:name="android.permission.CREATE_USERS" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_ADMINS" />
     <uses-permission android:name="android.permission.BLUETOOTH_STACK" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
@@ -104,8 +107,19 @@
     <uses-permission android:name="android.permission.REGISTER_CALL_PROVIDER" />
     <uses-permission android:name="android.permission.REGISTER_CONNECTION_MANAGER" />
     <uses-permission android:name="android.permission.REGISTER_SIM_SUBSCRIPTION" />
+    <uses-permission android:name="android.permission.GET_APP_OPS_STATS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_STACKS" />
+    <uses-permission android:name="android.permission.CONNECTIVITY_INTERNAL" />
+    <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <!-- Permission needed to rename bugreport notifications (so they're not shown as Shell) -->
+    <uses-permission android:name="android.permission.SUBSTITUTE_NOTIFICATION_APP_NAME" />
+    <!-- Permission needed to hold a wakelock in dumpstate.cpp (drop_root_user()) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <application android:label="@string/app_label">
+    <application android:label="@string/app_label"
+                 android:defaultToDeviceProtectedStorage="true"
+                 android:directBootAware="true">
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="com.android.shell"
@@ -130,7 +144,7 @@
 
         <activity
             android:name=".BugreportWarningActivity"
-            android:theme="@*android:style/Theme.DeviceDefault.Light.Dialog.Alert"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog.Alert"
             android:finishOnCloseSystemDialogs="true"
             android:excludeFromRecents="true"
             android:exported="false" />
@@ -139,8 +153,21 @@
             android:name=".BugreportReceiver"
             android:permission="android.permission.DUMP">
             <intent-filter>
+                <action android:name="android.intent.action.BUGREPORT_STARTED" />
                 <action android:name="android.intent.action.BUGREPORT_FINISHED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".RemoteBugreportReceiver"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="android.intent.action.REMOTE_BUGREPORT_FINISHED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".BugreportProgressService"
+            android:exported="false"/>
     </application>
 </manifest>

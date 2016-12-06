@@ -47,6 +47,8 @@ oneway interface IConnectionServiceAdapter {
 
     void setDialing(String callId);
 
+    void setPulling(String callId);
+
     void setDisconnected(String callId, in DisconnectCause disconnectCause);
 
     void setOnHold(String callId);
@@ -54,6 +56,8 @@ oneway interface IConnectionServiceAdapter {
     void setRingbackRequested(String callId, boolean ringing);
 
     void setConnectionCapabilities(String callId, int connectionCapabilities);
+
+    void setConnectionProperties(String callId, int connectionProperties);
 
     void setIsConferenced(String callId, String conferenceCallId);
 
@@ -85,5 +89,9 @@ oneway interface IConnectionServiceAdapter {
 
     void addExistingConnection(String callId, in ParcelableConnection connection);
 
-    void setExtras(String callId, in Bundle extras);
+    void putExtras(String callId, in Bundle extras);
+
+    void removeExtras(String callId, in List<String> keys);
+
+    void onConnectionEvent(String callId, String event, in Bundle extras);
 }

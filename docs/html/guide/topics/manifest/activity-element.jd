@@ -25,7 +25,7 @@ parent.link=manifest-intro.html
           android:<a href="#hwaccel">hardwareAccelerated</a>=["true" | "false"]
           android:<a href="#icon">icon</a>="<i>drawable resource</i>"
           android:<a href="#label">label</a>="<i>string resource</i>"
-          android:<a href="#lmode">launchMode</a>=["multiple" | "singleTop" |
+          android:<a href="#lmode">launchMode</a>=["standard" | "singleTop" |
                               "singleTask" | "singleInstance"]
           android:<a href="#maxRecents">maxRecents</a>="<i>integer</i>"
           android:<a href="#multi">multiprocess</a>=["true" | "false"]
@@ -35,6 +35,7 @@ parent.link=manifest-intro.html
           android:<a href="#prmsn">permission</a>="<i>string</i>"
           android:<a href="#proc">process</a>="<i>string</i>"
           android:<a href="#relinquish">relinquishTaskIdentity</a>=["true" | "false"]
+          android:<a href="#resizeableActivity">resizeableActivity</a>=["true" | "false"]
           android:<a href="#screen">screenOrientation</a>=["unspecified" | "behind" |
                                      "landscape" | "portrait" |
                                      "reverseLandscape" | "reversePortrait" |
@@ -43,6 +44,7 @@ parent.link=manifest-intro.html
                                      "sensor" | "fullSensor" | "nosensor" |
                                      "user" | "fullUser" | "locked"]
           android:<a href="#state">stateNotNeeded</a>=["true" | "false"]
+          android:<a href="#supportsPIP">supportsPictureInPicture</a>=["true" | "false"]
           android:<a href="#aff">taskAffinity</a>="<i>string</i>"
           android:<a href="#theme">theme</a>="<i>resource or theme</i>"
           android:<a href="#uioptions">uiOptions</a>=["none" | "splitActionBarWhenNarrow"]
@@ -64,7 +66,7 @@ parent.link=manifest-intro.html
 <dt>description:</dt>
 <dd itemprop="description">Declares an activity (an {@link android.app.Activity} subclass) that
 implements part of the application's visual user interface.  All activities
-must be represented by {@code &lt;activity&gt;}
+must be represented by {@code <activity>}
 elements in the manifest file.  Any that are not declared there will not be seen
 by the system and will never be run.
 
@@ -158,7 +160,7 @@ automatically removed from the overview screen. This overrides the caller's use 
 <dt><a name="banner"></a>{@code android:banner}</dt>
 <dd>A <a href="{@docRoot}guide/topics/resources/drawable-resource.html">drawable resource</a>
 providing an extended graphical banner for its associated item. Use with the
-{@code &lt;activity&gt;} tag to supply a default banner for a specific activity, or with the
+{@code <activity>} tag to supply a default banner for a specific activity, or with the
 <a href="{@docRoot}guide/topics/manifest/application-element.html"><code>&lt;application&gt;</code></a>
 tag to supply a banner for all application activities.
 
@@ -168,7 +170,7 @@ should only be specified by applications with an activity that handles the
 {@link android.content.Intent#CATEGORY_LEANBACK_LAUNCHER} intent.</p>
 
 <p>This attribute must be set as a reference to a drawable resource containing
-the image (for example {@code "&#64;drawable/banner"}). There is no default banner.
+the image (for example {@code "@drawable/banner"}). There is no default banner.
 </p>
 
 <p>
@@ -373,7 +375,7 @@ The <code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt
 <a href="{@docRoot}guide/topics/manifest/application-element.html#enabled">enabled</a></code>
 attribute that applies to all application components, including activities.  The
 <code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code>
-and {@code &lt;activity&gt;} attributes must both be "{@code true}" (as they both
+and {@code <activity>} attributes must both be "{@code true}" (as they both
 are by default) for the system to be able to instantiate the activity.  If either
 is "{@code false}", it cannot be instantiated.
 </p></dd>
@@ -700,7 +702,7 @@ This attribute was introduced in API Level 3.
 <!-- api level 16 -->
 <dt><a name="parent"></a>{@code android:parentActivityName}</dt>
 <dd>The class name of the logical parent of the activity. The name here must match the class
-  name given to the corresponding {@code &lt;activity>} element's
+  name given to the corresponding {@code <activity>} element's
   <a href="#nm"><code>android:name</code></a> attribute.
 
 <p>The system reads this attribute to determine which activity should be started when
@@ -708,7 +710,7 @@ This attribute was introduced in API Level 3.
   synthesize a back stack of activities with {@link android.app.TaskStackBuilder}.</p>
 
 <p>To support API levels 4 - 16, you can also declare the parent activity with a {@code
-&lt;meta-data>} element that specifies a value for {@code "android.support.PARENT_ACTIVITY"}.
+<meta-data>} element that specifies a value for {@code "android.support.PARENT_ACTIVITY"}.
 For example:</p>
 <pre>
 &lt;activity
@@ -794,9 +796,39 @@ to "{@code false}". The default value is "{@code false}".
 and icons in the <a href="{@docRoot}guide/components/recents.html">overview screen</a>.</p>
 </dd>
 
+<dt id="resizeableActivity"><code>resizeableActivity</code></dt>
+
+<dd>
+<p>
+  Specifies whether the app supports <a href=
+  "{@docRoot}guide/topics/ui/multi-window.html">multi-window display</a>. You
+  can set this attribute in either the <code>&lt;activity&gt;</code> or
+  <a href="application-element.html"><code>&lt;application&gt;</code></a>
+  element.
+</p>
+
+<p>
+  If you set this attribute to true, the user can launch the activity in
+  split-screen and freeform modes. If you set the attribute to false, the
+  activity does not support multi-window mode. If this value is false, and the
+  user attempts to launch the activity in multi-window mode, the activity takes
+  over the full screen.
+</p>
+
+<p>
+  If your app targets API level 24 or higher, but you do not specify a value
+  for this attribute, the attribute's value defaults to true.
+</p>
+
+<p>
+  This attribute was added in API level 24.
+</p>
+</dd>
 
 <dt><a name="screen"></a>{@code android:screenOrientation}</dt>
-<dd>The orientation of the activity's display on the device.
+<dd>The orientation of the activity's display on the device. The system ignores
+  this attribute if the activity is running in <a
+  href="{@docRoot}guide/topics/ui/multi-window.html">multi-window mode</a>.
 
 <p>The value can be any one of the following strings:</p>
 
@@ -888,7 +920,7 @@ example, if you declare either {@code "landscape"}, {@code "reverseLandscape"}, 
 {@code "sensorLandscape"}, then your application will be available only to devices that support
 landscape orientation. However, you should also explicitly declare that
 your application requires either portrait or landscape orientation with the <a
-href="{@docRoot}guide/topics/manifest/uses-feature-element.html">{@code &lt;uses-feature&gt;}</a>
+href="{@docRoot}guide/topics/manifest/uses-feature-element.html">{@code <uses-feature>}</a>
 element. For example, <code>&lt;uses-feature
 android:name="android.hardware.screen.portrait"/></code>. This is purely a filtering behavior
 provided by Google Play (and other services that support it) and the platform itself does not
@@ -920,6 +952,19 @@ absence of retained state.  For example, the activity that displays the
 home screen uses this setting to make sure that it does not get removed if it
 crashes for some reason.
 </p></dd>
+
+<dt id="supportsPIP"><code>supportsPictureInPicture</code></dt>
+
+<dd>
+<p>
+  Specifies whether the activity supports <a href=
+  "{@docRoot}training/tv/playback/picture-in-picture.jd">Picture-in-Picture</a>
+  display. The system ignores this attribute if <a href=
+  "#resizeableActivity"><code>android:resizeableActivity</code></a> is false.
+</p>
+
+<p>This attribute was added in API level 24.</p>
+</dd>
 
 <dt><a name="aff"></a>{@code android:taskAffinity}</dt>
 <dd>The task that the activity has an affinity for.  Activities with

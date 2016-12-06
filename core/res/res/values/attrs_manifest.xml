@@ -62,6 +62,20 @@
          a reference to a Drawable resource containing the image definition. -->
     <attr name="icon" format="reference" />
 
+    <!-- A Drawable resource providing a graphical representation of its
+         associated item.  Use with the
+         application tag (to supply a default round icon for all application
+         components), or with the activity, receiver, service, or instrumentation
+         tag (to supply a specific round icon for that component).  It may also be
+         used with the intent-filter tag to supply a round icon to show to the
+         user when an activity is being selected based on a particular Intent.
+
+         <p>The given round icon will be used to display to the user a graphical
+         representation of its associated component; for example, as the round icon
+         for main activity that is displayed in the launcher.  This must be
+         a reference to a Drawable resource containing the image definition. -->
+    <attr name="roundIcon" format="reference" />
+
     <!-- A Drawable resource providing an extended graphical banner for its
          associated item. Use with the application tag (to supply a default
          banner for all application activities), or with the activity, tag to
@@ -108,13 +122,6 @@
          <em>This attribute is usable only by applications
          included in the system image. Third-party apps cannot use it.</em> -->
     <attr name="allowClearUserData" format="boolean" />
-
-    <!-- Option to let applications specify that user data should
-         never be encrypted if an Encrypted File System solution
-         is enabled. Specifically, this is an "opt-out" feature, meaning
-         that, by default, user data will be encrypted if the EFS feature
-         is enabled. -->
-    <attr name="neverEncrypt" format="boolean" />
 
     <!-- Option to indicate this application is only for testing purposes.
          For example, it may expose functionality or data outside of itself
@@ -232,6 +239,9 @@
             granted any application pre-installed on the system image (not just privileged
             apps). -->
         <flag name="preinstalled" value="0x400" />
+        <!-- Additional flag from base permission type: this permission can be automatically
+            granted to the setup wizard app -->
+        <flag name="setup" value="0x800" />
     </attr>
 
     <!-- Flags indicating more context for a permission group. -->
@@ -248,9 +258,12 @@
              may cost the user money.  Such permissions may be highlighted
              when shown to the user with this additional information.  -->
         <flag name="costsMoney" value="0x0001" />
-        <!-- Additional flag from base permission type: this permission is hidden
-             and should not show in the UI. -->
-        <flag name="hidden" value="0x2" />
+        <!-- Additional flag from base permission type: this permission has been
+             removed and it is no longer enforced. It shouldn't be shown in the
+             UI. Removed permissions are kept as normal permissions for backwards
+             compatibility as apps may be checking them before calling an API.
+        -->
+        <flag name="removed" value="0x2" />
     </attr>
 
     <!-- Specified the name of a group that this permission is associated
@@ -429,6 +442,11 @@
          sets. -->
     <attr name="multiArch" format ="boolean" />
 
+    <!-- Specify whether the 32 bit version of the ABI should be used in a
+         multiArch application. If both abioverride flag (i.e. using abi option of abd install)
+         and use32bitAbi are used, then use32bit is ignored.-->
+    <attr name="use32bitAbi" />
+
     <!-- Specify whether a component is allowed to have multiple instances
          of itself running in different processes.  Use with the activity
          and provider tags.
@@ -548,6 +566,15 @@
          should not be interrupted with other activities or notifications. -->
     <attr name="immersive" format="boolean" />
 
+    <!-- Flag declaring that this activity will be run in VR mode, and specifying
+         the component of the {@link android.service.vr.VrListenerService} that should be
+         bound while this Activity is visible if it is installed and enabled on this device.
+         This is equivalent to calling {@link android.app.Activity#setVrModeEnabled} with the
+         the given component name within the Activity that this attribute is set for.
+         Declaring this will prevent the system from leaving VR mode during an Activity
+         transtion from one VR activity to another. -->
+    <attr name="enableVrMode" format="string" />
+
     <!-- Specify the order in which content providers hosted by a process
          are instantiated when that process is created.  Not needed unless
          you have providers with dependencies between each other, to make
@@ -570,6 +597,11 @@
          place an activity to always be preferred over others.  The value is a
          single integer, with higher numbers considered to be better. -->
     <attr name="priority" format="integer" />
+
+    <!-- Indicate if this component is aware of direct boot lifecycle, and can be
+         safely run before the user has entered their credentials (such as a lock
+         pattern or PIN). -->
+    <attr name="directBootAware" format="boolean" />
 
     <!-- Specify how an activity should be launched.  See the
          <a href="{@docRoot}guide/topics/fundamentals/tasks-and-back-stack.html">Tasks and Back
@@ -629,7 +661,7 @@
          specified, it will run in the current preferred orientation
          of the screen.
          <p>This attribute is supported by the <a
-            href="{@docRoot}guide/topics/manifest/activity-element.html">{@code &lt;activity>}</a>
+            href="{@docRoot}guide/topics/manifest/activity-element.html">{@code <activity>}</a>
             element. -->
     <attr name="screenOrientation">
         <!-- No preference specified: let the system decide the best
@@ -788,6 +820,10 @@
              physical screen size has changed such as switching to an external
              display. -->
         <flag name="smallestScreenSize" value="0x0800" />
+        <!-- The display density has changed. This might be caused by the user
+             specifying a different display scale, or it might be caused by a
+             different display being activated. -->
+        <flag name="density" value="0x1000" />
         <!-- The layout direction has changed. For example going from LTR to RTL. -->
         <flag name="layoutDirection" value="0x2000" />
         <!-- The font scaling factor has changed, that is the user has
@@ -900,6 +936,17 @@
          <p>The default value of this attribute is <code>false</code>. -->
     <attr name="restoreAnyVersion" format="boolean" />
 
+    <!-- Indicates that full-data backup operations for this application may
+         be performed even if the application is in a foreground-equivalent
+         state.  <em>Use with caution!</em>  Setting this flag to <code>true</code>
+         can impact app behavior while the user is interacting with the device.
+
+         <p>If unspecified, the default value of this attribute is <code>false</code>,
+         which means that the OS will avoid backing up the application while it is
+         running in the foreground (such as a music app that is actively playing
+         music via a service in the startForeground() state). -->
+    <attr name="backupInForeground" format="boolean" />
+
     <!-- The default install location defined by an application. -->
     <attr name="installLocation">
         <!-- Let the system decide ideal install location -->
@@ -914,8 +961,8 @@
         <enum name="preferExternal" value="2" />
     </attr>
 
-    <!-- Extra options for an activity's UI. Applies to either the {@code &lt;activity&gt;} or
-         {@code &lt;application&gt;} tag. If specified on the {@code &lt;application&gt;}
+    <!-- Extra options for an activity's UI. Applies to either the {@code <activity>} or
+         {@code <application>} tag. If specified on the {@code <application>}
          tag these will be considered defaults for all activities in the
          application. -->
     <attr name="uiOptions">
@@ -1059,7 +1106,7 @@
          at the same time.
 
          <p>The default value is <code>false</code> for applications with
-         <code>targetSdkVersion</code> lesser than {@link android.os.Build.VERSION_CODES#M} and
+         <code>targetSdkVersion</code> lesser than {@link android.os.Build.VERSION_CODES#N} and
          <code>true</code> otherwise.
 
          <p>NOTE: A task's root activity value is applied to all additional activities launched in
@@ -1067,11 +1114,23 @@
          all other activities in the task as resizeable and will not if the root activity isn't
          resizeable.
 
-         <p>NOTE: The value of {@link android.R.attr#screenOrientation} will be ignored for
-         resizeable activities as the system doesn't support fixed orientation on a resizeable
-         activity.
-         @hide -->
+         <p>NOTE: The value of {@link android.R.attr#screenOrientation} is ignored for
+         resizeable activities when in multi-window mode. -->
     <attr name="resizeableActivity" format="boolean" />
+
+    <!-- Indicates that the activity supports the picture-in-picture (PiP) form of multi-window.
+         While it makes sense to be able to resize most activities types in multi-window mode when
+         {@link android.R.attr#resizeableActivity} is set. It only makes sense to put specific types
+         of activities in PiP mode of multi-window. For example, activities that play video. When
+         set the activity will be allowed to enter PiP mode when the system deems it appropriate on
+         devices that support PiP.
+
+         <p>The default value is <code>false</code> for applications with
+         <code>targetSdkVersion</code> lesser than {@link android.os.Build.VERSION_CODES#N} and
+         <code>true</code> otherwise.
+
+         <p>NOTE: Attribute is only used if {@link android.R.attr#resizeableActivity} is true. -->
+    <attr name="supportsPictureInPicture" format="boolean" />
 
     <!-- This value indicates how tasks rooted at this activity will behave in lockTask mode.
          While in lockTask mode the system will not launch non-permitted tasks until
@@ -1133,6 +1192,9 @@
          -->
     <attr name="autoVerify" format="boolean" />
 
+    <!-- An XML resource with the application's Network Security Config. -->
+    <attr name="networkSecurityConfig" format="reference" />
+
     <!-- The <code>manifest</code> tag is the root of an
          <code>AndroidManifest.xml</code> file,
          describing the contents of an Android package (.apk) file.  One
@@ -1188,6 +1250,7 @@
         <attr name="theme" />
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="description" />
@@ -1221,7 +1284,7 @@
         <attr name="killAfterRestore" />
         <attr name="restoreNeedsApplication" />
         <attr name="restoreAnyVersion" />
-        <attr name="neverEncrypt" />
+        <attr name="backupInForeground" />
         <!-- Request that your application's processes be created with
              a large Dalvik heap.  This applies to <em>all</em> processes
              created for the application.  It only applies to the first
@@ -1265,6 +1328,10 @@
         <attr name="usesCleartextTraffic" />
         <attr name="multiArch" />
         <attr name="extractNativeLibs" />
+        <attr name="defaultToDeviceProtectedStorage" format="boolean" />
+        <attr name="directBootAware" />
+        <attr name="resizeableActivity" />
+        <attr name="networkSecurityConfig" />
     </declare-styleable>
     <!-- The <code>permission</code> tag declares a security permission that can be
          used to control access from other packages to specific components or
@@ -1283,6 +1350,7 @@
         <attr name="name" />
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="permissionGroup" />
@@ -1310,6 +1378,7 @@
         <attr name="name" />
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="description" />
@@ -1343,6 +1412,7 @@
         <attr name="name" />
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
     </declare-styleable>
@@ -1396,22 +1466,24 @@
         <attr name="reqFiveWayNav" />
     </declare-styleable>
 
-    <!-- The <code>uses-feature</code> tag specifies
-         a specific feature used by the application.
-         For example an application might specify that it requires
-         specific version of OpenGL. Multiple such attribute
-         values can be specified by the application.
+    <!-- The <code>uses-feature</code> tag specifies a specific device
+         hardware or software feature used by the application. For
+         example an application might specify that it requires
+         a camera. Multiple attribute values can be specified by the
+         application.
 
          <p>This appears as a child tag of the root
          {@link #AndroidManifest manifest} tag. -->
     <declare-styleable name="AndroidManifestUsesFeature" parent="AndroidManifest">
+        <!-- The name of the feature that is being used. -->
+        <attr name="name" />
+        <!-- The version of the feature that is being used. -->
+        <attr name="version" format="integer" />
         <!-- The GLES driver version number needed by an application.
              The higher 16 bits represent the major number and the lower 16 bits
              represent the minor number. For example for GL 1.2 referring to
              0x00000102, the actual value should be set as 0x00010002. -->
-        <attr name="glEsVersion" format="integer"/>
-        <!--  The name of the feature that is being used. -->
-        <attr name="name" />
+        <attr name="glEsVersion" format="integer" />
         <!--  Specify whether this feature is required for the application.
               The default is true, meaning the application requires the
               feature, and does not want to be installed on devices that
@@ -1622,6 +1694,7 @@
         <attr name="label" />
         <attr name="description" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="process" />
@@ -1640,6 +1713,7 @@
         <attr name="enabled" />
         <attr name="exported" />
         <attr name="singleUser" />
+        <attr name="directBootAware" />
     </declare-styleable>
 
     <!-- Attributes that can be supplied in an AndroidManifest.xml
@@ -1704,6 +1778,7 @@
         <attr name="label" />
         <attr name="description" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="permission" />
@@ -1723,6 +1798,11 @@
              with it is through the Service API (binding and starting). -->
         <attr name="isolatedProcess" format="boolean" />
         <attr name="singleUser" />
+        <attr name="directBootAware" />
+        <!-- If the service is an {@link android.R.attr#isolatedProcess} service, this permits a
+             client to bind to the service as if it were running it its own package.  The service
+             must also be {@link android.R.attr#exported} if this flag is set. -->
+        <attr name="externalService" format="boolean" />
     </declare-styleable>
 
     <!-- The <code>receiver</code> tag declares an
@@ -1747,6 +1827,7 @@
         <attr name="label" />
         <attr name="description" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="permission" />
@@ -1758,6 +1839,7 @@
         <attr name="enabled" />
         <attr name="exported" />
         <attr name="singleUser" />
+        <attr name="directBootAware" />
     </declare-styleable>
 
     <!-- The <code>activity</code> tag declares an
@@ -1782,6 +1864,7 @@
         <attr name="label" />
         <attr name="description" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="launchMode" />
@@ -1816,9 +1899,9 @@
         <attr name="uiOptions" />
         <attr name="parentActivityName" />
         <attr name="singleUser" />
-        <!-- @hide This broacast receiver will only receive broadcasts for the
-             primary user.  Can only be used with receivers. -->
-        <attr name="primaryUserOnly" format="boolean" />
+        <!-- @hide This broadcast receiver or activity will only receive broadcasts for the
+             system user-->
+        <attr name="systemUserOnly" format="boolean" />
         <attr name="persistableMode" />
         <attr name="allowEmbedded" />
         <attr name="documentLaunchMode" />
@@ -1826,10 +1909,17 @@
         <attr name="autoRemoveFromRecents" />
         <attr name="relinquishTaskIdentity" />
         <attr name="resumeWhilePausing" />
-        <!-- @hide -->
         <attr name="resizeableActivity" />
+        <attr name="supportsPictureInPicture" />
         <attr name="lockTaskMode" />
         <attr name="showForAllUsers" />
+        <attr name="directBootAware" />
+        <!-- @hide This activity is always focusable regardless of if it is in a task/stack whose
+             activities are normally not focusable.
+             For example, {@link android.R.attr#supportsPictureInPicture} activities are placed
+             in a task/stack that isn't focusable. This flag allows them to be focusable.-->
+        <attr name="alwaysFocusable" format="boolean" />
+        <attr name="enableVrMode" />
     </declare-styleable>
 
     <!-- The <code>activity-alias</code> tag declares a new
@@ -1858,6 +1948,7 @@
         <attr name="label" />
         <attr name="description" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="permission" />
@@ -1930,6 +2021,7 @@
          parent="AndroidManifestActivity AndroidManifestReceiver AndroidManifestService">
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="priority" />
@@ -2060,6 +2152,7 @@
         <attr name="targetPackage" />
         <attr name="label" />
         <attr name="icon" />
+        <attr name="roundIcon" />
         <attr name="banner" />
         <attr name="logo" />
         <attr name="handleProfiling" />
@@ -2095,6 +2188,10 @@
             <enum name="hdpi" value="240" />
             <!-- An extra high density screen, approximately 320dpi. -->
             <enum name="xhdpi" value="320" />
+            <!-- An extra extra high density screen, approximately 480dpi. -->
+            <enum name="xxhdpi" value="480" />
+            <!-- An extra extra extra high density screen, approximately 640dpi. -->
+            <enum name="xxxhdpi" value="640" />
         </attr>
     </declare-styleable>
 
@@ -2193,6 +2290,48 @@
     <!-- Associate declared KeySets with upgrading capability. -->
     <declare-styleable name="AndroidManifestUpgradeKeySet" parent="AndroidManifest">
       <attr name="name" />
+    </declare-styleable>
+
+    <!-- <code>layout</code> tag allows configuring the layout for the activity within multi-window
+         environment. -->
+    <declare-styleable name="AndroidManifestLayout" parent="AndroidManifestActivity">
+        <!-- Default width of the activity. Can be either a fixed value or fraction, in which case
+             the width will be constructed as a fraction of the total available width. -->
+        <attr name="defaultWidth" format="dimension|fraction" />
+        <!-- Default height of the activity. Can be either a fixed value or fraction, in which case
+             the height will be constructed as a fraction of the total available height. -->
+        <attr name="defaultHeight" format="dimension|fraction" />
+        <!-- Where to initially position the activity inside the available space. Uses constants
+             defined in {@link android.view.Gravity}. -->
+        <attr name="gravity" />
+        <!-- Minimal width of the activity.
+
+         <p><strong>NOTE:</strong> A task's root activity value is applied to all additional
+         activities launched in the task. That is if the root activity of a task set minimal width,
+         then the system will set the same minimal width on all other activities in the task. It
+         will also ignore any other minimal width attributes of non-root activities. -->
+        <attr name="minWidth" />
+        <!-- @removed -->
+        <attr name="minimalWidth" format="dimension" />
+        <!-- Minimal height of the activity.
+
+         <p><strong>NOTE:</strong> A task's root activity value is applied to all additional
+         activities launched in the task. That is if the root activity of a task set minimal height,
+         then the system will set the same minimal height on all other activities in the task. It
+         will also ignore any other minimal height attributes of non-root activities. -->
+        <attr name="minHeight" />
+        <!-- @removed -->
+        <attr name="minimalHeight" format="dimension" />
+    </declare-styleable>
+
+    <!-- <code>restrict-update</code> tag restricts system apps from being updated unless the
+        SHA-512 hash equals the specified value.
+        @hide -->
+    <declare-styleable name="AndroidManifestRestrictUpdate" parent="AndroidManifest">
+        <!-- The SHA-512 hash of the only APK that can be used to update a package.
+             <p>NOTE: This is only applicable to system packages.
+             @hide -->
+        <attr name="hash" format="string" />
     </declare-styleable>
 
 </resources>

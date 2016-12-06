@@ -48,7 +48,11 @@ enum class FrameInfoIndex {
     SwapBuffers,
     FrameCompleted,
 
+    DequeueBufferDuration,
+    QueueBufferDuration,
+
     // Must be the last value!
+    // Also must be kept in sync with FrameMetrics.java#FRAME_STATS_COUNT
     NumIndexes
 };
 
@@ -116,6 +120,10 @@ public:
 
     void addFlag(int frameInfoFlag) {
         set(FrameInfoIndex::Flags) |= static_cast<uint64_t>(frameInfoFlag);
+    }
+
+    const int64_t* data() const {
+        return mFrameInfo;
     }
 
     inline int64_t operator[](FrameInfoIndex index) const {

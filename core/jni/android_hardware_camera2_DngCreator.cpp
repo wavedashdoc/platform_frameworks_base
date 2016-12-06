@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "DngCreator_JNI"
 #include <inttypes.h>
 #include <string.h>
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <utils/Log.h>
 #include <utils/Errors.h>
@@ -76,6 +77,13 @@ using namespace img_utils;
     if (entry.count == 0) { \
         jniThrowExceptionFmt(jnienv, "java/lang/IllegalArgumentException", \
                 "Missing metadata fields for tag %s (%x)", (writer)->getTagName(tagId), (tagId)); \
+        return nullptr; \
+    }
+
+#define BAIL_IF_EXPR_RET_NULL_SP(expr, jnienv, tagId, writer) \
+    if (expr) { \
+        jniThrowExceptionFmt(jnienv, "java/lang/IllegalArgumentException", \
+                "Invalid metadata for tag %s (%x)", (writer)->getTagName(tagId), (tagId)); \
         return nullptr; \
     }
 
@@ -194,8 +202,8 @@ private:
 NativeContext::NativeContext(const CameraMetadata& characteristics, const CameraMetadata& result) :
         mCharacteristics(std::make_shared<CameraMetadata>(characteristics)),
         mResult(std::make_shared<CameraMetadata>(result)), mThumbnailWidth(0),
-        mThumbnailHeight(0), mOrientation(0), mThumbnailSet(false), mGpsSet(false),
-        mDescriptionSet(false), mCaptureTimeSet(false) {}
+        mThumbnailHeight(0), mOrientation(TAG_ORIENTATION_UNKNOWN), mThumbnailSet(false),
+        mGpsSet(false), mDescriptionSet(false), mCaptureTimeSet(false) {}
 
 NativeContext::~NativeContext() {}
 
@@ -754,47 +762,30 @@ uint32_t DirectStripSource::getIfd() const {
 // ----------------------------------------------------------------------------
 
 /**
- * Given a buffer crop rectangle relative to the pixel array size, and the pre-correction active
- * array crop rectangle for the camera characteristics, set the default crop rectangle in the
- * TiffWriter relative to the buffer crop rectangle origin.
+ * Calculate the default crop relative to the "active area" of the image sensor (this active area
+ * will always be the pre-correction active area rectangle), and set this.
  */
 static status_t calculateAndSetCrop(JNIEnv* env, const CameraMetadata& characteristics,
-        uint32_t bufWidth, uint32_t bufHeight, sp<TiffWriter> writer) {
+        sp<TiffWriter> writer) {
 
     camera_metadata_ro_entry entry =
             characteristics.find(ANDROID_SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE);
-    uint32_t xmin = static_cast<uint32_t>(entry.data.i32[0]);
-    uint32_t ymin = static_cast<uint32_t>(entry.data.i32[1]);
     uint32_t width = static_cast<uint32_t>(entry.data.i32[2]);
     uint32_t height = static_cast<uint32_t>(entry.data.i32[3]);
 
     const uint32_t margin = 8; // Default margin recommended by Adobe for interpolation.
 
-    // Crop based on pre-correction array for pixel array
-    uint32_t aLeft = xmin;
-    uint32_t aTop = ymin;
-    uint32_t aRight = xmin + width;
-    uint32_t aBottom = ymin + height;
-
-    // 8 pixel border crop for pixel array dimens
-    uint32_t bLeft = margin;
-    uint32_t bTop = margin;
-    uint32_t bRight = bufWidth - margin;
-    uint32_t bBottom = bufHeight - margin;
-
-    // Set the crop to be the intersection of the two rectangles
-    uint32_t defaultCropOrigin[] = {std::max(aLeft, bLeft), std::max(aTop, bTop)};
-    uint32_t defaultCropSize[] = {std::min(aRight, bRight) - defaultCropOrigin[0],
-            std::min(aBottom, bBottom) - defaultCropOrigin[1]};
-
-    // If using buffers with  pre-correction array dimens, switch to 8 pixel border crop
-    // relative to the pixel array dimens
-    if (bufWidth == width && bufHeight == height) {
-        defaultCropOrigin[0] = xmin + margin;
-        defaultCropOrigin[1] = ymin + margin;
-        defaultCropSize[0] = width - margin;
-        defaultCropSize[1] = height - margin;
+    if (width < margin * 2 || height < margin * 2) {
+        ALOGE("%s: Cannot calculate default crop for image, pre-correction active area is too"
+                "small: h=%" PRIu32 ", w=%" PRIu32, __FUNCTION__, height, width);
+        jniThrowException(env, "java/lang/IllegalStateException",
+                "Pre-correction active area is too small.");
+        return BAD_VALUE;
     }
+
+    uint32_t defaultCropOrigin[] = {margin, margin};
+    uint32_t defaultCropSize[] = {width - defaultCropOrigin[0] - margin,
+                                  height - defaultCropOrigin[1] - margin};
 
     BAIL_IF_INVALID_R(writer->addEntry(TAG_DEFAULTCROPORIGIN, 2, defaultCropOrigin,
             TIFF_IFD_0), env, TAG_DEFAULTCROPORIGIN, writer);
@@ -1112,7 +1103,7 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
 
     {
         // Set orientation
-        uint16_t orientation = 1; // Normal
+        uint16_t orientation = TAG_ORIENTATION_NORMAL;
         BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_ORIENTATION, 1, &orientation, TIFF_IFD_0),
                 env, TAG_ORIENTATION, writer);
     }
@@ -1154,12 +1145,27 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
     }
 
     {
-        // Set blacklevel tags
+        // Set blacklevel tags, using dynamic black level if available
         camera_metadata_entry entry =
-                characteristics.find(ANDROID_SENSOR_BLACK_LEVEL_PATTERN);
-        BAIL_IF_EMPTY_RET_NULL_SP(entry, env, TAG_BLACKLEVEL, writer);
-        const uint32_t* blackLevel = reinterpret_cast<const uint32_t*>(entry.data.i32);
-        BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_BLACKLEVEL, entry.count, blackLevel,
+                results.find(ANDROID_SENSOR_DYNAMIC_BLACK_LEVEL);
+        uint32_t blackLevelRational[8] = {0};
+        if (entry.count != 0) {
+            BAIL_IF_EXPR_RET_NULL_SP(entry.count != 4, env, TAG_BLACKLEVEL, writer);
+            for (size_t i = 0; i < entry.count; i++) {
+                blackLevelRational[i * 2] = static_cast<uint32_t>(entry.data.f[i] * 100);
+                blackLevelRational[i * 2 + 1] = 100;
+            }
+        } else {
+            // Fall back to static black level which is guaranteed
+            entry = characteristics.find(ANDROID_SENSOR_BLACK_LEVEL_PATTERN);
+            BAIL_IF_EXPR_RET_NULL_SP(entry.count != 4, env, TAG_BLACKLEVEL, writer);
+            for (size_t i = 0; i < entry.count; i++) {
+                blackLevelRational[i * 2] = static_cast<uint32_t>(entry.data.i32[i]);
+                blackLevelRational[i * 2 + 1] = 1;
+            }
+
+        }
+        BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_BLACKLEVEL, 4, blackLevelRational,
                 TIFF_IFD_0), env, TAG_BLACKLEVEL, writer);
 
         uint16_t repeatDim[2] = {2, 2};
@@ -1564,16 +1570,23 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
 
     {
         // Set dimensions
-        if (calculateAndSetCrop(env, characteristics, imageWidth, imageHeight, writer) != OK) {
+        if (calculateAndSetCrop(env, characteristics, writer) != OK) {
             return nullptr;
         }
         camera_metadata_entry entry =
                 characteristics.find(ANDROID_SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE);
-        BAIL_IF_EMPTY_RET_NULL_SP(entry, env, TAG_DEFAULTCROPSIZE, writer);
+        BAIL_IF_EMPTY_RET_NULL_SP(entry, env, TAG_ACTIVEAREA, writer);
         uint32_t xmin = static_cast<uint32_t>(entry.data.i32[0]);
         uint32_t ymin = static_cast<uint32_t>(entry.data.i32[1]);
         uint32_t width = static_cast<uint32_t>(entry.data.i32[2]);
         uint32_t height = static_cast<uint32_t>(entry.data.i32[3]);
+
+        // If we only have a buffer containing the pre-correction rectangle, ignore the offset
+        // relative to the pixel array.
+        if (imageWidth == width && imageHeight == height) {
+            xmin = 0;
+            ymin = 0;
+        }
 
         uint32_t activeArea[] = {ymin, xmin, ymin + height, xmin + width};
         BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_ACTIVEAREA, 4, activeArea, TIFF_IFD_0),
@@ -1659,8 +1672,7 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
             lsmHeight = static_cast<uint32_t>(entry1.data.i32[1]);
         }
 
-        camera_metadata_entry entry2 =
-                results.find(ANDROID_STATISTICS_LENS_SHADING_MAP);
+        camera_metadata_entry entry2 = results.find(ANDROID_STATISTICS_LENS_SHADING_MAP);
 
         camera_metadata_entry entry =
                 characteristics.find(ANDROID_SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE);
@@ -1670,10 +1682,11 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
         uint32_t width = static_cast<uint32_t>(entry.data.i32[2]);
         uint32_t height = static_cast<uint32_t>(entry.data.i32[3]);
         if (entry2.count > 0 && entry2.count == lsmWidth * lsmHeight * 4) {
+            // GainMap rectangle is relative to the active area origin.
             err = builder.addGainMapsForMetadata(lsmWidth,
                                                  lsmHeight,
-                                                 ymin,
-                                                 xmin,
+                                                 0,
+                                                 0,
                                                  height,
                                                  width,
                                                  opcodeCfaLayout,
@@ -1684,6 +1697,45 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
                 return nullptr;
             }
         }
+
+
+        // Set up bad pixel correction list
+        camera_metadata_entry entry3 = characteristics.find(ANDROID_STATISTICS_HOT_PIXEL_MAP);
+
+        if ((entry3.count % 2) != 0) {
+            ALOGE("%s: Hot pixel map contains odd number of values, cannot map to pairs!",
+                    __FUNCTION__);
+            jniThrowRuntimeException(env, "failed to add hotpixel map.");
+            return nullptr;
+        }
+
+        // Adjust the bad pixel coordinates to be relative to the origin of the active area DNG tag
+        std::vector<uint32_t> v;
+        for (size_t i = 0; i < entry3.count; i+=2) {
+            int32_t x = entry3.data.i32[i];
+            int32_t y = entry3.data.i32[i + 1];
+            x -= static_cast<int32_t>(xmin);
+            y -= static_cast<int32_t>(ymin);
+            if (x < 0 || y < 0 || static_cast<uint32_t>(x) >= width ||
+                    static_cast<uint32_t>(y) >= width) {
+                continue;
+            }
+            v.push_back(x);
+            v.push_back(y);
+        }
+        const uint32_t* badPixels = &v[0];
+        uint32_t badPixelCount = v.size();
+
+        if (badPixelCount > 0) {
+            err = builder.addBadPixelListForMetadata(badPixels, badPixelCount, opcodeCfaLayout);
+
+            if (err != OK) {
+                ALOGE("%s: Could not add hotpixel map.", __FUNCTION__);
+                jniThrowRuntimeException(env, "failed to add hotpixel map.");
+                return nullptr;
+            }
+        }
+
 
         size_t listSize = builder.getSize();
         uint8_t opcodeListBuf[listSize];
@@ -1740,6 +1792,8 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
 
     {
         // Set up orientation tags.
+        // Note: There's only one orientation field for the whole file, in IFD0
+        // The main image and any thumbnails therefore have the same orientation.
         uint16_t orientation = nativeContext->getOrientation();
         BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_ORIENTATION, 1, &orientation, TIFF_IFD_0),
                 env, TAG_ORIENTATION, writer);
@@ -1821,7 +1875,6 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
         }
 
         Vector<uint16_t> tagsToMove;
-        tagsToMove.add(TAG_ORIENTATION);
         tagsToMove.add(TAG_NEWSUBFILETYPE);
         tagsToMove.add(TAG_ACTIVEAREA);
         tagsToMove.add(TAG_BITSPERSAMPLE);
@@ -1852,12 +1905,6 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
             return nullptr;
         }
 
-        // Make sure both IFDs get the same orientation tag
-        sp<TiffEntry> orientEntry = writer->getEntry(TAG_ORIENTATION, TIFF_IFD_SUB1);
-        if (orientEntry.get() != nullptr) {
-            writer->addEntry(orientEntry, TIFF_IFD_0);
-        }
-
         // Setup thumbnail tags
 
         {
@@ -1883,8 +1930,10 @@ static sp<TiffWriter> DngCreator_setup(JNIEnv* env, jobject thiz, uint32_t image
 
         {
             // Set bits per sample
-            uint16_t bits = BITS_PER_RGB_SAMPLE;
-            BAIL_IF_INVALID_RET_NULL_SP(writer->addEntry(TAG_BITSPERSAMPLE, 1, &bits, TIFF_IFD_0),
+            uint16_t bits[SAMPLES_PER_RGB_PIXEL];
+            for (int i = 0; i < SAMPLES_PER_RGB_PIXEL; i++) bits[i] = BITS_PER_RGB_SAMPLE;
+            BAIL_IF_INVALID_RET_NULL_SP(
+                    writer->addEntry(TAG_BITSPERSAMPLE, SAMPLES_PER_RGB_PIXEL, bits, TIFF_IFD_0),
                     env, TAG_BITSPERSAMPLE, writer);
         }
 
@@ -2251,7 +2300,7 @@ static void DngCreator_nativeWriteInputStream(JNIEnv* env, jobject thiz, jobject
 
 } /*extern "C" */
 
-static JNINativeMethod gDngCreatorMethods[] = {
+static const JNINativeMethod gDngCreatorMethods[] = {
     {"nativeClassInit",        "()V", (void*) DngCreator_nativeClassInit},
     {"nativeInit", "(Landroid/hardware/camera2/impl/CameraMetadataNative;"
             "Landroid/hardware/camera2/impl/CameraMetadataNative;Ljava/lang/String;)V",

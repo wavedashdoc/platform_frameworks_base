@@ -36,7 +36,7 @@ types. There are also a few default files such as <code>res/values/strings.xml</
 your string values.</p>
 
 
-<h2 id="CreateDirs">Create Locale Directories and String Files</h2> 
+<h2 id="CreateDirs">Create Locale Directories and String Files</h2>
 
 <p>To add support for more languages, create additional <code>values</code> directories inside
 <code>res/</code> that include a hyphen and the ISO language code at the end of the
@@ -63,7 +63,7 @@ MyProject/
 
 <p>At runtime, the Android system uses the appropriate set of string resources based on the
 locale currently set for the user's device.</p>
-  
+
 <p>For example, the following are some different string resource files for different languages.</p>
 
 
@@ -107,12 +107,12 @@ href="{@docRoot}guide/topics/resources/localization.html">Localization</a>.
 <h2 id="UseString">Use the String Resources</h2>
 
 <p>You can reference your string resources in your source code and other XML files using the
-resource name defined by the {@code &lt;string>} element's {@code name} attribute.</p>
+resource name defined by the {@code <string>} element's {@code name} attribute.</p>
 
 <p>In your source code, you can refer to a string resource with the syntax {@code
-R.string.&lt;string_name>}. There are a variety of methods that accept a string resource this
+R.string.<string_name>}. There are a variety of methods that accept a string resource this
 way.</p>
-  
+
 <p>For example:</p>
 
 <pre>
@@ -124,8 +124,8 @@ TextView textView = new TextView(this);
 textView.setText(R.string.hello_world);
 </pre>
 
-<p>In other XML files, you can refer to a string resource with the syntax {@code
-&#64;string/&lt;string_name>} whenever the XML attribute accepts a string value.</p>
+<p>In other XML files, you can refer to a string resource with the syntax
+<code>@string/&lt;string_name&gt;</code> whenever the XML attribute accepts a string value.</p>
 
 <p>For example:</p>
 

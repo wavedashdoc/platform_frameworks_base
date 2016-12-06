@@ -388,7 +388,7 @@ android_media_visualizer_native_setup(JNIEnv *env, jobject thiz, jobject weak_th
                                   0,
                                   android_media_visualizer_effect_callback,
                                   lpJniStorage,
-                                  sessionId);
+                                  (audio_session_t) sessionId);
     if (lpVisualizer == 0) {
         ALOGE("Error creating Visualizer");
         goto setup_failure;
@@ -435,11 +435,12 @@ setup_failure:
 
 // ----------------------------------------------------------------------------
 static void android_media_visualizer_native_release(JNIEnv *env,  jobject thiz) {
-    sp<Visualizer> lpVisualizer = setVisualizer(env, thiz, 0);
-    if (lpVisualizer == 0) {
-        return;
+    { //limit scope so that lpVisualizer is deleted before JNI storage data.
+        sp<Visualizer> lpVisualizer = setVisualizer(env, thiz, 0);
+        if (lpVisualizer == 0) {
+            return;
+        }
     }
-
     // delete the JNI data
     VisualizerJniStorage* lpJniStorage =
         (VisualizerJniStorage *)env->GetLongField(thiz, fields.fidJniData);
@@ -677,7 +678,7 @@ android_media_setPeriodicCapture(JNIEnv *env, jobject thiz, jint rate, jboolean 
 // ----------------------------------------------------------------------------
 
 // Dalvik VM type signatures
-static JNINativeMethod gMethods[] = {
+static const JNINativeMethod gMethods[] = {
     {"native_init",            "()V",     (void *)android_media_visualizer_native_init},
     {"native_setup",           "(Ljava/lang/Object;I[ILjava/lang/String;)I",
                                           (void *)android_media_visualizer_native_setup},

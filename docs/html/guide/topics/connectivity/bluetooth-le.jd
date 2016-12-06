@@ -171,7 +171,7 @@ include the following in your app's manifest:</p>
 </pre>
 
 <p>However, if you want to make your app available to devices that don't support BLE,
-you should still include this element in your app's manifest, but set {@code required="false"}. 
+you should still include this element in your app's manifest, but set {@code required="false"}.
 Then at run-time you can determine BLE availability by using
 {@link android.content.pm.PackageManager#hasSystemFeature PackageManager.hasSystemFeature()}:
 
@@ -186,7 +186,7 @@ if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) 
 
 <p>Before your application can communicate over BLE, you need
 to verify that BLE is supported on the device, and if so, ensure that it is enabled.
-Note that this check is only necessary if {@code &lt;uses-feature.../&gt;}
+Note that this check is only necessary if {@code <uses-feature.../>}
 is set to false.</p>
 
 <p>If BLE is not supported, then you should gracefully disable any
