@@ -4574,5 +4574,8 @@ message MetricsEvent {
 
     // Custom settings
     CUSTOMSETTINGS = 9998;
+
+    // Quick settings tiles
+    CUSTOM_QUICK_TILES = 9999;
   }
 }
