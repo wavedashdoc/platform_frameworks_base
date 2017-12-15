@@ -3938,6 +3938,18 @@ public final class Settings {
          */
 
         /**
+         * 0 - wallpaper based
+         * 1 - force light
+         * 2 - force dark
+         * @hide
+         */
+        public static final String SYSTEM_UI_THEME = "system_ui_theme";
+
+        /** @hide */
+        public static final Validator SYSTEM_UI_THEME_VALIDATOR =
+                new InclusiveIntegerRangeValidator(0, 2);
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -3993,7 +4005,8 @@ public final class Settings {
             LOCK_TO_APP_ENABLED,
             NOTIFICATION_SOUND,
             ACCELEROMETER_ROTATION,
-            SHOW_BATTERY_PERCENT
+            SHOW_BATTERY_PERCENT,
+            SYSTEM_UI_THEME
         };
 
         /**
@@ -4103,6 +4116,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(LOCK_TO_APP_ENABLED);
             PRIVATE_SETTINGS.add(EGG_MODE);
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
+            PRIVATE_SETTINGS.add(SYSTEM_UI_THEME);
         }
 
         /**
@@ -4181,6 +4195,7 @@ public final class Settings {
             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
             VALIDATORS.put(SHOW_BATTERY_PERCENT, SHOW_BATTERY_PERCENT_VALIDATOR);
+            VALIDATORS.put(SYSTEM_UI_THEME, SYSTEM_UI_THEME_VALIDATOR);
         }
 
         /**
