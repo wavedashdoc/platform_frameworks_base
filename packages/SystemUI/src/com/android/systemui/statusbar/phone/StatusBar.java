@@ -594,6 +594,7 @@ public class StatusBar extends SystemUI implements DemoMode,
     protected PorterDuffXfermode mSrcOverXferMode =
             new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
 
+    private Entry mEntryToRefresh;
     private String[] mNavMediaArrowsExcludeList;
     private MediaSessionManager mMediaSessionManager;
     private MediaController mMediaController;
@@ -610,9 +611,7 @@ public class StatusBar extends SystemUI implements DemoMode,
                     clearCurrentMediaNotification();
                     updateMediaMetaData(true, true);
                 }
-                if (mNavigationBar != null) {
-                    setMediaPlaying();
-                }
+                setMediaPlaying();
             }
         }
 
@@ -622,35 +621,50 @@ public class StatusBar extends SystemUI implements DemoMode,
             if (DEBUG_MEDIA) Log.v(TAG, "DEBUG_MEDIA: onMetadataChanged: " + metadata);
             mMediaMetadata = metadata;
             updateMediaMetaData(true, true);
-            if (mNavigationBar != null) {
-                setMediaPlaying();
-            }
+            setMediaPlaying();
         }
 
         @Override
         public void onSessionDestroyed() {
             super.onSessionDestroyed();
-            if (mNavigationBar != null) {
-                setMediaPlaying();
-            }
+            setMediaPlaying();
         }
     };
 
     public void setMediaPlaying() {
-        if (mNavigationBar != null) {
-            if (PlaybackState.STATE_PLAYING ==
-                    getMediaControllerPlaybackState(mMediaController)
-                    || PlaybackState.STATE_BUFFERING ==
-                    getMediaControllerPlaybackState(mMediaController)) {
-                final String currentPkg = mMediaController.getPackageName().toLowerCase();
-                for (String packageName : mNavMediaArrowsExcludeList) {
-                    if (currentPkg.contains(packageName)) {
-                        return;
-                    }
+        if (PlaybackState.STATE_PLAYING ==
+                getMediaControllerPlaybackState(mMediaController)
+                || PlaybackState.STATE_BUFFERING ==
+                getMediaControllerPlaybackState(mMediaController)) {
+            mediaTrackInfo(mMediaController);
+            final String currentPkg = mMediaController.getPackageName().toLowerCase();
+            for (String packageName : mNavMediaArrowsExcludeList) {
+                if (currentPkg.contains(packageName)) {
+                    return;
                 }
+            }
+            if (mNavigationBar != null) {
                 mNavigationBar.setMediaPlaying(true);
-            } else {
+            }
+        } else {
+            if (mNavigationBar != null) {
                 mNavigationBar.setMediaPlaying(false);
+            }
+        }
+    }
+
+    private void mediaTrackInfo(MediaController mc) {
+        ArrayList<Entry> activeNotifications = mNotificationData.getActiveNotifications();
+        int N = activeNotifications.size();
+        final String pkg = mc.getPackageName();
+        for (int i = 0; i < N; i++) {
+            final Entry entry = activeNotifications.get(i);
+            if (entry.notification.getPackageName().equals(pkg)) {
+                // NotificationInflater calls async MediaNotificationProcessoron to create notification
+                // colors and when finished will trigger AsyncInflationFinished for all registered callbacks
+                // like StatusBar. From there we'll send updated colors to Pulse
+                mEntryToRefresh = entry;
+                break;
             }
         }
     }
@@ -1128,6 +1142,8 @@ public class StatusBar extends SystemUI implements DemoMode,
                     R.id.header_debug_info);
             mNotificationPanelDebugText.setVisibility(View.VISIBLE);
         }
+
+        setMediaPlaying();
 
         boolean showNav = Settings.Secure.getInt(mContext.getContentResolver(),
                 Settings.Secure.NAVIGATION_BAR_VISIBLE,
@@ -1802,6 +1818,15 @@ public class StatusBar extends SystemUI implements DemoMode,
             updateNotificationShade();
         }
         entry.row.setLowPriorityStateUpdated(false);
+
+        if (mEntryToRefresh == entry) {
+            if (mNavigationBar != null) {
+                Notification n = entry.notification.getNotification();
+                int[] colors = {n.backgroundColor, n.foregroundColor,
+                        n.primaryTextColor, n.secondaryTextColor};
+                mNavigationBar.setPulseColors(n.isColorizedMedia(), colors);
+            }
+        }
     }
 
     private boolean shouldSuppressFullScreenIntent(String key) {
@@ -2412,10 +2437,8 @@ public class StatusBar extends SystemUI implements DemoMode,
                 clearCurrentMediaNotification();
                 mMediaController = controller;
                 mMediaController.registerCallback(mMediaListener);
-                if (mNavigationBar != null) {
-                    setMediaPlaying();
-                }
                 mMediaMetadata = mMediaController.getMetadata();
+                setMediaPlaying();
                 if (DEBUG_MEDIA) {
                     Log.v(TAG, "DEBUG_MEDIA: insert listener, receive metadata: "
                             + mMediaMetadata);
@@ -2466,9 +2489,7 @@ public class StatusBar extends SystemUI implements DemoMode,
                         + mMediaController.getPackageName());
             }
             mMediaController.unregisterCallback(mMediaListener);
-            if (mNavigationBar != null) {
-                setMediaPlaying();
-            }
+            setMediaPlaying();
         }
         mMediaController = null;
     }
