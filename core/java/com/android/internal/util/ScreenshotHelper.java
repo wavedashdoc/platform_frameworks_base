@@ -12,6 +12,7 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.util.Log;
+import android.view.WindowManager;
 
 public class ScreenshotHelper {
     private static final String TAG = "ScreenshotHelper";
@@ -115,7 +116,9 @@ public class ScreenshotHelper {
                     Context.BIND_AUTO_CREATE | Context.BIND_FOREGROUND_SERVICE_WHILE_AWAKE,
                     UserHandle.CURRENT)) {
                 mScreenshotConnection = conn;
-                handler.postDelayed(mScreenshotTimeout, SCREENSHOT_TIMEOUT_MS);
+                if (screenshotType != WindowManager.TAKE_SCREENSHOT_SELECTED_REGION) {
+                    handler.postDelayed(mScreenshotTimeout, SCREENSHOT_TIMEOUT_MS);
+                }
             }
         }
     }
