@@ -588,7 +588,13 @@ public final class AssetManager implements AutoCloseable {
                     }
                 }
             }
-            destroy();
+            
+            synchronized (this) {
+                if (mObject != 0) {
+                    destroy();
+                    mObject = 0;
+                }
+            }
         } finally {
             super.finalize();
         }
@@ -907,7 +913,9 @@ public final class AssetManager implements AutoCloseable {
         mNumRefs--;
         //System.out.println("Dec streams: mNumRefs=" + mNumRefs
         //                   + " mReleased=" + mReleased);
-        if (mNumRefs == 0) {
+        if (mNumRefs == 0 && mObject != 0) {
+            destroy();
+            mObject = 0;
             destroy();
         }
     }
